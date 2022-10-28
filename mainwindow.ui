@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>485</width>
-    <height>697</height>
+    <width>483</width>
+    <height>693</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -171,28 +171,21 @@
            </property>
           </widget>
          </item>
-         <item row="4" column="0">
+         <item row="5" column="0">
           <widget class="QLabel" name="label_4">
            <property name="text">
             <string>Step Interval, T</string>
            </property>
           </widget>
          </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;New Voltage, V&lt;span style=&quot; vertical-align:sub;&quot;&gt;new&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="0">
+         <item row="7" column="0">
           <widget class="QLabel" name="label_5">
            <property name="text">
             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Step Formula, f(t)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
-         <item row="1" column="1" colspan="3">
+         <item row="1" column="1" colspan="4">
           <widget class="QLineEdit" name="rf_cur_volt">
            <property name="enabled">
             <bool>false</bool>
@@ -208,7 +201,7 @@
            </property>
           </widget>
          </item>
-         <item row="0" column="1" colspan="3">
+         <item row="0" column="1" colspan="4">
           <widget class="QLineEdit" name="rf_cur_freq">
            <property name="enabled">
             <bool>false</bool>
@@ -218,20 +211,20 @@
            </property>
           </widget>
          </item>
-         <item row="5" column="0">
+         <item row="6" column="0">
           <widget class="QLabel" name="label_7">
            <property name="text">
             <string>Number of Steps, N</string>
            </property>
           </widget>
          </item>
-         <item row="7" column="2">
-          <widget class="QPushButton" name="rf_fwd_btn">
+         <item row="8" column="3">
+          <widget class="QPushButton" name="rf_open_trap_btn">
            <property name="enabled">
             <bool>false</bool>
            </property>
            <property name="text">
-            <string>Forward</string>
+            <string>Open Trap</string>
            </property>
           </widget>
          </item>
@@ -242,17 +235,7 @@
            </property>
           </widget>
          </item>
-         <item row="7" column="1">
-          <widget class="QPushButton" name="rf_preview_btn">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="text">
-            <string>Preview</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="1" colspan="3">
+         <item row="6" column="1" colspan="4">
           <widget class="QSpinBox" name="rf_num_steps">
            <property name="enabled">
             <bool>false</bool>
@@ -268,7 +251,7 @@
            </property>
           </widget>
          </item>
-         <item row="4" column="1" colspan="3">
+         <item row="5" column="1" colspan="4">
           <widget class="QDoubleSpinBox" name="rf_step_int">
            <property name="enabled">
             <bool>false</bool>
@@ -293,29 +276,7 @@
            </property>
           </widget>
          </item>
-         <item row="3" column="1" colspan="3">
-          <widget class="QDoubleSpinBox" name="rf_new_volt">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="suffix">
-            <string> V</string>
-           </property>
-           <property name="decimals">
-            <number>7</number>
-           </property>
-           <property name="minimum">
-            <double>0.000001000000000</double>
-           </property>
-           <property name="maximum">
-            <double>14.109999999999999</double>
-           </property>
-           <property name="value">
-            <double>1.000000000000000</double>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="1" colspan="3">
+         <item row="7" column="1" colspan="4">
           <widget class="QLineEdit" name="rf_step_formula">
            <property name="enabled">
             <bool>false</bool>
@@ -328,30 +289,84 @@
            </property>
           </widget>
          </item>
-         <item row="7" column="3">
-          <widget class="QPushButton" name="rf_bwd_btn">
+         <item row="8" column="4">
+          <widget class="QPushButton" name="rf_close_trap_btn">
            <property name="enabled">
             <bool>false</bool>
            </property>
            <property name="text">
-            <string>Reverse</string>
+            <string>Close Trap</string>
            </property>
           </widget>
          </item>
          <item row="2" column="0">
-          <widget class="QLabel" name="label_11">
+          <widget class="QLabel" name="label">
            <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Previous Voltage, V&lt;span style=&quot; vertical-align:sub;&quot;&gt;previous&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Trap Opened Voltage&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
-         <item row="2" column="1" colspan="3">
-          <widget class="QLineEdit" name="rf_prev_volt">
+         <item row="2" column="1" colspan="4">
+          <widget class="QDoubleSpinBox" name="rf_open_trap_volt">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="suffix">
+            <string> V</string>
+           </property>
+           <property name="decimals">
+            <number>6</number>
+           </property>
+           <property name="minimum">
+            <double>0.000001000000000</double>
+           </property>
+           <property name="maximum">
+            <double>14.109999999999999</double>
+           </property>
+           <property name="value">
+            <double>1.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="1" colspan="2">
+          <widget class="QPushButton" name="rf_preview_btn">
            <property name="enabled">
             <bool>false</bool>
            </property>
            <property name="text">
-            <string>0 V</string>
+            <string>Preview / Reset</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0" rowspan="2">
+          <widget class="QLabel" name="label_11">
+           <property name="text">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Trap Closed Voltage&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1" rowspan="2" colspan="4">
+          <widget class="QDoubleSpinBox" name="rf_close_trap_volt">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="suffix">
+            <string> V</string>
+           </property>
+           <property name="decimals">
+            <number>6</number>
+           </property>
+           <property name="minimum">
+            <double>0.000001000000000</double>
+           </property>
+           <property name="maximum">
+            <double>14.109999999999999</double>
+           </property>
+           <property name="singleStep">
+            <double>1.000000000000000</double>
+           </property>
+           <property name="value">
+            <double>2.000000000000000</double>
            </property>
           </widget>
          </item>
@@ -406,7 +421,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>485</width>
+     <width>483</width>
      <height>21</height>
     </rect>
    </property>

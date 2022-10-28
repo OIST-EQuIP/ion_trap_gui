@@ -20,15 +20,11 @@ from os import path
 ##########
 ## remember to conda develop or add the other dependencies as site packages or use .pth!!!
 ##########
-settings = QSettings("EQuIP", "Ion Trap")
-settings.setValue("hey", 3)
-settings.contains("hey")
-settings.clear()
-settings.value("hey")
 
 
 class MainWindow(QMainWindow):
-    # other imports
+    RF_OPEN_TRAP_FILENAME = "/var/user/open_trap.lsw"
+    RF_CLOSE_TRAP_FILENAME = "/var/user/close_trap.lsw"
 
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
@@ -51,8 +47,8 @@ class MainWindow(QMainWindow):
         # load graph
         self.init_graph()
         self.preview_volt_evol()
-        self.rf_fwd_btn.setEnabled(False)
-        self.rf_bwd_btn.setEnabled(False)
+        self.rf_open_trap_btn.setEnabled(False)
+        self.rf_close_trap_btn.setEnabled(False)
 
         # test
         self.rf.set_power(1)
@@ -85,7 +81,8 @@ class MainWindow(QMainWindow):
             self.settings.setValue("last_rf_add", self.rf_address.currentText())
             settings_keys = [
                 "rf_max_volt",
-                "rf_new_volt",
+                "rf_open_trap_volt",
+                "rf_close_trap_volt",
                 "rf_step_int",
                 "rf_num_steps",
             ]
@@ -119,32 +116,36 @@ class MainWindow(QMainWindow):
         )
         print("Configurations loaded:", self.settings.allKeys())
 
-        # geometry
-        if self.settings.contains("size"):
-            self.resize(self.settings.value("size"))
-            self.move(self.settings.value("pos"))
+        try:
+            # geometry
+            if self.settings.contains("size"):
+                self.resize(self.settings.value("size"))
+                self.move(self.settings.value("pos"))
 
-        # rf
-        if self.settings.contains("last_rf_add"):
-            self.rf_address.addItem(self.settings.value("last_rf_add"))
-            settings_keys = [
-                "rf_max_volt",
-                "rf_new_volt",
-                "rf_step_int",
-                "rf_num_steps",
-            ]
-            for key in settings_keys:
-                val = self.settings.value(key)
-                spinbox = getattr(self, key)
-                if type(spinbox) is QDoubleSpinBox:
-                    getattr(self, key).setValue(float(val))
-                else:
-                    getattr(self, key).setValue(int(val))
-            self.rf_step_formula.setText(self.settings.value("rf_step_formula"))
+            # rf
+            if self.settings.contains("last_rf_add"):
+                self.rf_address.addItem(self.settings.value("last_rf_add"))
+                settings_keys = [
+                    "rf_max_volt",
+                    "rf_open_trap_volt",
+                    "rf_close_trap_volt",
+                    "rf_step_int",
+                    "rf_num_steps",
+                ]
+                for key in settings_keys:
+                    val = self.settings.value(key)
+                    spinbox = getattr(self, key)
+                    if type(spinbox) is QDoubleSpinBox:
+                        getattr(self, key).setValue(float(val))
+                    else:
+                        getattr(self, key).setValue(int(val))
+                self.rf_step_formula.setText(self.settings.value("rf_step_formula"))
+        except Exception:
+            print("Malformed configurations. Load partially.")
 
     def init_graph(self):
         self.plot_widget.setLabels(
-            title="V(t) = V<sub>current</sub> + (V<sub>new</sub>-V<sub>current</sub>)f(t)/f(NT)",
+            title="V(t) = V<sub>current</sub> + (V<sub>target</sub>-V<sub>current</sub>)f(t)/f(NT)",
             left="V(t) [V]",
             bottom="t [s]",
         )
@@ -168,12 +169,13 @@ class MainWindow(QMainWindow):
         )
         self.rf_max_volt_btn.clicked.connect(self.set_rf_max_volt)
         self.rf_preview_btn.clicked.connect(self.preview_volt_evol)
-        self.rf_fwd_btn.clicked.connect(lambda: self.toggle_volt_evol(True))
-        self.rf_bwd_btn.clicked.connect(lambda: self.toggle_volt_evol(False))
+        self.rf_open_trap_btn.clicked.connect(lambda: self.toggle_volt_evol(True))
+        self.rf_close_trap_btn.clicked.connect(lambda: self.toggle_volt_evol(False))
 
         # voltage control
         self.rf_controls = [
-            self.rf_new_volt,
+            self.rf_open_trap_volt,
+            self.rf_close_trap_volt,
             self.rf_step_int,
             self.rf_num_steps,
             self.rf_step_formula,
@@ -181,11 +183,19 @@ class MainWindow(QMainWindow):
         ]
         for control in self.rf_controls:
             if type(control) is QDoubleSpinBox:
-                control.valueChanged.connect(lambda: self.rf_fwd_btn.setEnabled(False))
-                control.valueChanged.connect(lambda: self.rf_bwd_btn.setEnabled(False))
+                control.valueChanged.connect(
+                    lambda: self.rf_open_trap_btn.setEnabled(False)
+                )
+                control.valueChanged.connect(
+                    lambda: self.rf_close_trap_btn.setEnabled(False)
+                )
             elif type(control) is QLineEdit:
-                control.textChanged.connect(lambda: self.rf_fwd_btn.setEnabled(False))
-                control.textChanged.connect(lambda: self.rf_bwd_btn.setEnabled(False))
+                control.textChanged.connect(
+                    lambda: self.rf_open_trap_btn.setEnabled(False)
+                )
+                control.textChanged.connect(
+                    lambda: self.rf_close_trap_btn.setEnabled(False)
+                )
 
         if self.connect_rf():
             self.update_rf_status()
@@ -207,8 +217,9 @@ class MainWindow(QMainWindow):
         return self.is_rf_connected()
 
     def update_rf_status(self):
-        self.rf_cur_freq.setText(str(self.rf.get_frequency() / 1e6) + " MHz")
-        self.rf_cur_volt.setText(str(self.rf.get_power()) + " V")
+        if self.is_rf_connected():
+            self.rf_cur_freq.setText(str(self.rf.get_frequency() / 1e6) + " MHz")
+            self.rf_cur_volt.setText(str(self.rf.get_power()) + " V")
         # TODO: actual status as well?
 
     def set_rf_max_volt(self):
@@ -218,10 +229,9 @@ class MainWindow(QMainWindow):
     def preview_volt_evol(self):
         self.rf_remaining_time = 0
         self.update_rf_status()
-        self.rf_prev_volt.setText(self.rf_cur_volt.text() + " V")
 
-        V = float(self.rf_cur_volt.text()[:-2])
-        V_new = float(self.rf_new_volt.value())
+        V_open = float(self.rf_open_trap_volt.value())
+        V_close = float(self.rf_close_trap_volt.value())
         T = float(self.rf_step_int.value())
         N = int(self.rf_num_steps.value())
         t = np.arange(0, T * (N + 1), T)
@@ -229,25 +239,31 @@ class MainWindow(QMainWindow):
         try:
             formula = self.rf_step_formula.text() or "t"
             V_t = eval(formula)
-            V_t = V_t / V_t[-1] * (V_new - V) + V
+            V_t = V_t / V_t[-1] * (V_close - V_open) + V_open
+            print(t, V_t)
             # set power and dwell time list
             self.rf.set_list_sweep(
-                pow_list=V_t, dwell_list=T, repeat=False, file_name="/var/user/fwd.lsw"
+                pow_list=V_t,
+                dwell_list=T,
+                repeat=False,
+                filename=self.RF_CLOSE_TRAP_FILENAME,
             )
             self.rf.set_list_sweep(
                 pow_list=V_t[::-1],
                 dwell_list=T,
                 repeat=False,
-                file_name="/var/user/bwd.lsw",
+                filename=self.RF_OPEN_TRAP_FILENAME,
             )
 
             self.plot_widget.clear()
-            self.plot_widget.plot(t, V_t, symbol="o")
-            self.rf_fwd_btn.setEnabled(True)
-            self.rf_bwd_btn.setEnabled(True)
+            leg = self.plot_widget.addLegend(offset=1)
+            self.plot_widget.plot(t, V_t[::-1], symbol="o", pen="g", name="opening")
+            self.plot_widget.plot(t, V_t, symbol="o", pen="r", name="closing")
+            leg.anchor((0.5, 0.5), (0.15, 0.5))
+            self.rf_open_trap_btn.setEnabled(True)
+            self.rf_close_trap_btn.setEnabled(True)
             # time tracking
             self.rf_sim_end = N
-            self.rf_sim = 0
             self.rf_sim_line = pg.InfiniteLine(0)
             self.plot_widget.addItem(self.rf_sim_line)
             self.rf_timer.setInterval(int(T * 1000))
@@ -257,44 +273,55 @@ class MainWindow(QMainWindow):
             self.plot_widget.addItem(text)
 
     def simul_volt_evol(self):
-        if self.rf_sim >= self.rf_sim_end:
-            self.rf_fwd_btn.setEnabled(False)
-            self.rf_bwd_btn.setEnabled(False)
-            self.end_volt_evol()
         self.rf_sim_line.setValue(self.rf_sim * self.rf_timer.interval() / 1000)
+        if self.rf_sim >= self.rf_sim_end:
+            self.rf_open_trap_btn.setEnabled(False)
+            self.rf_close_trap_btn.setEnabled(False)
+            self.end_volt_evol()
         self.rf_sim += 1
 
     def resume_simul_volt_evol(self):
-        self.rf_sim += 1
+        self.simul_volt_evol()
         self.rf_timer.start()
 
     def end_volt_evol(self):
         self.rf_timer.stop()
         self.rf.stop_sweep()
         self.unlock_rf_control()
+        self.rf_open_trap_btn.setEnabled(True)
+        self.rf_close_trap_btn.setEnabled(True)
         self.update_rf_status()
-        self.rf_fwd_btn.setText("Start")
+        self.rf_open_trap_btn.setText("Open Trap")
+        self.rf_close_trap_btn.setText("Close Trap")
 
-    def toggle_volt_evol(self, forward=True):
+    def toggle_volt_evol(self, open=True):
+        if open:
+            self.rf.change_list_sweep(self.RF_OPEN_TRAP_FILENAME)
+            btn = self.rf_open_trap_btn
+        else:
+            self.rf.change_list_sweep(self.RF_CLOSE_TRAP_FILENAME)
+            btn = self.rf_close_trap_btn
+
         if self.rf_remaining_time:
             # resuming
-            # not locking rf control, so it can be cancelled
+            # not locking rf control, so that it can be cancelled
             self.rf.start_list_sweep()
             QTimer.singleShot(self.rf_remaining_time, self.resume_simul_volt_evol)
             self.rf_remaining_time = 0
-            self.rf_fwd_btn.setText("Pause")
+            btn.setText("Pause")
         elif self.rf_timer.isActive():
             # stopping
             self.rf_remaining_time = self.rf_timer.remainingTime()
             self.end_volt_evol()
-            self.rf_fwd_btn.setText("Resume")
+            btn.setText("Resume")
         else:
             # starting
             self.rf.start_list_sweep()
             self.rf_timer.start()
+            self.rf_sim = 0
             self.lock_rf_control()
-            self.rf_fwd_btn.setEnabled(True)
-            self.rf_fwd_btn.setText("Pause")
+            btn.setEnabled(True)
+            btn.setText("Pause")
 
     def is_rf_connected(self):
         try:
@@ -315,8 +342,8 @@ class MainWindow(QMainWindow):
     def lock_rf_control(self):
         for control in self.rf_controls:
             control.setEnabled(False)
-        self.rf_fwd_btn.setEnabled(False)
-        self.rf_bwd_btn.setEnabled(False)
+        self.rf_open_trap_btn.setEnabled(False)
+        self.rf_close_trap_btn.setEnabled(False)
 
     def unlock_rf_control(self):
         self.rf_status_label.setText("Status: <font color='green'>OK</font>")
