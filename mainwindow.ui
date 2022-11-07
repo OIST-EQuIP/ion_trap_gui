@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>483</width>
-    <height>693</height>
+    <width>485</width>
+    <height>699</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -111,6 +111,9 @@
             <property name="maximum">
              <double>14.109999999999999</double>
             </property>
+            <property name="singleStep">
+             <double>0.010000000000000</double>
+            </property>
             <property name="value">
              <double>3.000000000000000</double>
             </property>
@@ -185,32 +188,6 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="1" colspan="4">
-          <widget class="QLineEdit" name="rf_cur_volt">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="text">
-            <string>0 V</string>
-           </property>
-           <property name="readOnly">
-            <bool>false</bool>
-           </property>
-           <property name="clearButtonEnabled">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1" colspan="4">
-          <widget class="QLineEdit" name="rf_cur_freq">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="text">
-            <string>0 MHz</string>
-           </property>
-          </widget>
-         </item>
          <item row="6" column="0">
           <widget class="QLabel" name="label_7">
            <property name="text">
@@ -230,6 +207,12 @@
          </item>
          <item row="0" column="0">
           <widget class="QLabel" name="label_9">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="text">
             <string>Current Frequency</string>
            </property>
@@ -302,7 +285,7 @@
          <item row="2" column="0">
           <widget class="QLabel" name="label">
            <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Trap Opened Voltage&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Trap &lt;span style=&quot; font-weight:600;&quot;&gt;Opened&lt;/span&gt; Voltage&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
@@ -318,30 +301,23 @@
             <number>6</number>
            </property>
            <property name="minimum">
-            <double>0.000001000000000</double>
+            <double>0.000000000000000</double>
            </property>
            <property name="maximum">
             <double>14.109999999999999</double>
+           </property>
+           <property name="singleStep">
+            <double>0.010000000000000</double>
            </property>
            <property name="value">
             <double>1.000000000000000</double>
            </property>
           </widget>
          </item>
-         <item row="8" column="1" colspan="2">
-          <widget class="QPushButton" name="rf_preview_btn">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="text">
-            <string>Preview / Reset</string>
-           </property>
-          </widget>
-         </item>
          <item row="3" column="0" rowspan="2">
           <widget class="QLabel" name="label_11">
            <property name="text">
-            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Trap Closed Voltage&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Trap &lt;span style=&quot; font-weight:600;&quot;&gt;Closed&lt;/span&gt; Voltage&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
            </property>
           </widget>
          </item>
@@ -357,16 +333,102 @@
             <number>6</number>
            </property>
            <property name="minimum">
-            <double>0.000001000000000</double>
+            <double>0.000000000000000</double>
            </property>
            <property name="maximum">
             <double>14.109999999999999</double>
            </property>
            <property name="singleStep">
-            <double>1.000000000000000</double>
+            <double>0.010000000000000</double>
            </property>
            <property name="value">
             <double>2.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1" colspan="3">
+          <widget class="QDoubleSpinBox" name="rf_cur_freq">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="suffix">
+            <string> MHz</string>
+           </property>
+           <property name="decimals">
+            <number>9</number>
+           </property>
+           <property name="minimum">
+            <double>0.008000000000000</double>
+           </property>
+           <property name="maximum">
+            <double>1000.000000000000000</double>
+           </property>
+           <property name="singleStep">
+            <double>0.000100000000000</double>
+           </property>
+           <property name="value">
+            <double>16.649999999999999</double>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="4">
+          <widget class="QPushButton" name="rf_cur_freq_btn">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Set</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1" colspan="3">
+          <widget class="QDoubleSpinBox" name="rf_cur_volt">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="suffix">
+            <string> V</string>
+           </property>
+           <property name="decimals">
+            <number>6</number>
+           </property>
+           <property name="maximum">
+            <double>14.109999999999999</double>
+           </property>
+           <property name="singleStep">
+            <double>0.010000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="4">
+          <widget class="QPushButton" name="rf_cur_volt_btn">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Set</string>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="1" colspan="2">
+          <widget class="QPushButton" name="rf_preview_btn">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Preview / Update</string>
            </property>
           </widget>
          </item>
@@ -421,7 +483,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>483</width>
+     <width>485</width>
      <height>21</height>
     </rect>
    </property>

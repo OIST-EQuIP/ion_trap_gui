@@ -47,11 +47,11 @@ class MainWindow(QMainWindow):
         # load graph
         self.init_graph()
         self.preview_volt_evol()
-        self.rf_open_trap_btn.setEnabled(False)
-        self.rf_close_trap_btn.setEnabled(False)
+        self.lock_rf_control()
 
         # test
-        self.rf.set_power(1)
+        self.rf.set_power(0.7)
+        self.update_rf_status()
 
     def closeEvent(self, event):
         if not self.save_config():
@@ -145,7 +145,7 @@ class MainWindow(QMainWindow):
 
     def init_graph(self):
         self.plot_widget.setLabels(
-            title="V(t) = V<sub>current</sub> + (V<sub>target</sub>-V<sub>current</sub>)f(t)/f(NT)",
+            title="V(t) = V<sub>low</sub> + (V<sub>high</sub>-V<sub>low</sub>)Norm[f(t)]",
             left="V(t) [V]",
             bottom="t [s]",
         )
@@ -168,12 +168,22 @@ class MainWindow(QMainWindow):
             )
         )
         self.rf_max_volt_btn.clicked.connect(self.set_rf_max_volt)
+        self.rf_cur_freq.valueChanged.connect(
+            lambda: self.rf_cur_freq_btn.setEnabled(True)
+        )
+        self.rf_cur_freq_btn.clicked.connect(self.set_rf_cur_freq)
+        self.rf_cur_volt.valueChanged.connect(
+            lambda: self.rf_cur_volt_btn.setEnabled(True)
+        )
+        self.rf_cur_volt_btn.clicked.connect(self.set_rf_cur_volt)
         self.rf_preview_btn.clicked.connect(self.preview_volt_evol)
         self.rf_open_trap_btn.clicked.connect(lambda: self.toggle_volt_evol(True))
         self.rf_close_trap_btn.clicked.connect(lambda: self.toggle_volt_evol(False))
 
         # voltage control
         self.rf_controls = [
+            self.rf_cur_freq,
+            self.rf_cur_volt,
             self.rf_open_trap_volt,
             self.rf_close_trap_volt,
             self.rf_step_int,
@@ -202,7 +212,7 @@ class MainWindow(QMainWindow):
 
     def connect_rf(self):
         try:
-            self.rf_status_label.setText("Status: Connecting...")
+            self.lock_rf_control("Status: Connecting...")
             self.rf_status_label.repaint()
             instrument = self.rm.open_resource(self.rf_address.currentText())
             self.rf = SMA1000B(instrument)
@@ -217,19 +227,38 @@ class MainWindow(QMainWindow):
         return self.is_rf_connected()
 
     def update_rf_status(self):
-        if self.is_rf_connected():
-            self.rf_cur_freq.setText(str(self.rf.get_frequency() / 1e6) + " MHz")
-            self.rf_cur_volt.setText(str(self.rf.get_power()) + " V")
+        self.rf_cur_freq.setValue(self.rf.get_frequency() / 1e6)
+        self.rf_cur_volt.setValue(self.rf.get_power())
+        print("pow", self.rf.pow)
+        self.rf_cur_freq_btn.setEnabled(False)
+        self.rf_cur_volt_btn.setEnabled(False)
+        try:
+            self.rf_sim_hline.setValue(self.rf.pow)
+            print(self.rf.get_list_index(), self.rf_sim_vline.value(), "line")
+            # self.rf_sim_vline.setValue(self.rf.get_list_index())
+        except AttributeError:
+            pass
         # TODO: actual status as well?
 
     def set_rf_max_volt(self):
-        self.rf.set_power_limit(self.rf_max_volt.value())
+        new_max_volts = self.rf_max_volt.value()
+        self.rf.set_power_limit(new_max_volts)
+        self.rf_cur_volt.setMaximum(new_max_volts)
+        self.rf_open_trap_volt.setMaximum(new_max_volts)
+        self.rf_close_trap_volt.setMaximum(new_max_volts)
         self.unlock_rf_control()
+
+    def set_rf_cur_freq(self):
+        self.rf.set_frequency(self.rf_cur_freq.value() * 1e6)
+        self.rf_cur_freq_btn.setEnabled(False)
+
+    def set_rf_cur_volt(self):
+        self.rf.set_power(self.rf_cur_volt.value())
+        self.rf_cur_volt_btn.setEnabled(False)
+        self.rf_sim_hline.setValue(self.rf.pow)
 
     def preview_volt_evol(self):
         self.rf_remaining_time = 0
-        self.update_rf_status()
-
         V_open = float(self.rf_open_trap_volt.value())
         V_close = float(self.rf_close_trap_volt.value())
         T = float(self.rf_step_int.value())
@@ -237,9 +266,14 @@ class MainWindow(QMainWindow):
         t = np.arange(0, T * (N + 1), T)
 
         try:
+            if V_open > V_close:
+                raise Exception(
+                    "Trap opened voltage should be lower or equal to closed voltage"
+                )
+
             formula = self.rf_step_formula.text() or "t"
             V_t = eval(formula)
-            V_t = V_t / V_t[-1] * (V_close - V_open) + V_open
+            V_t = (V_t - V_t[0]) / (V_t[-1] - V_t[0]) * (V_close - V_open) + V_open
             print(t, V_t)
             # set power and dwell time list
             self.rf.set_list_sweep(
@@ -264,61 +298,79 @@ class MainWindow(QMainWindow):
             self.rf_close_trap_btn.setEnabled(True)
             # time tracking
             self.rf_sim_end = N
-            self.rf_sim_line = pg.InfiniteLine(0)
-            self.plot_widget.addItem(self.rf_sim_line)
+            self.rf_sim_vline = pg.InfiniteLine(0)
+            self.rf_sim_hline = pg.InfiniteLine(self.rf.pow, angle=0)
+            self.plot_widget.addItem(self.rf_sim_vline)
+            self.plot_widget.addItem(self.rf_sim_hline)
             self.rf_timer.setInterval(int(T * 1000))
         except Exception as e:
             self.plot_widget.clear()
             text = pg.TextItem(repr(e), anchor=(0.5, 0.5))
             self.plot_widget.addItem(text)
 
+        # to cancel all running timer and reset buttons
+        self.end_volt_evol()
+
     def simul_volt_evol(self):
-        self.rf_sim_line.setValue(self.rf_sim * self.rf_timer.interval() / 1000)
+        self.rf_sim_vline.setValue(self.rf_sim * self.rf_timer.interval() / 1000)
         if self.rf_sim >= self.rf_sim_end:
             self.rf_open_trap_btn.setEnabled(False)
             self.rf_close_trap_btn.setEnabled(False)
+            self.rf_sim_vline.setValue(0)
             self.end_volt_evol()
         self.rf_sim += 1
 
-    def resume_simul_volt_evol(self):
+    def resume_simul_volt_evol(self, btn):
         self.simul_volt_evol()
         self.rf_timer.start()
+        btn.setEnabled(True)
 
-    def end_volt_evol(self):
+    def end_volt_evol(self, enable_btn=True):
+        self.update_rf_status()
         self.rf_timer.stop()
         self.rf.stop_sweep()
         self.unlock_rf_control()
-        self.rf_open_trap_btn.setEnabled(True)
-        self.rf_close_trap_btn.setEnabled(True)
-        self.update_rf_status()
+        if enable_btn:
+            self.rf_open_trap_btn.setEnabled(True)
+            self.rf_close_trap_btn.setEnabled(True)
         self.rf_open_trap_btn.setText("Open Trap")
         self.rf_close_trap_btn.setText("Close Trap")
 
     def toggle_volt_evol(self, open=True):
         if open:
-            self.rf.change_list_sweep(self.RF_OPEN_TRAP_FILENAME)
             btn = self.rf_open_trap_btn
         else:
-            self.rf.change_list_sweep(self.RF_CLOSE_TRAP_FILENAME)
             btn = self.rf_close_trap_btn
 
+        print(self.rf_remaining_time, self.rf_timer.isActive())
         if self.rf_remaining_time:
+            print("resuming")
             # resuming
             # not locking rf control, so that it can be cancelled
             self.rf.start_list_sweep()
-            QTimer.singleShot(self.rf_remaining_time, self.resume_simul_volt_evol)
+            QTimer.singleShot(
+                self.rf_remaining_time + 1000, lambda: self.resume_simul_volt_evol(btn)
+            )
             self.rf_remaining_time = 0
             btn.setText("Pause")
+            btn.setEnabled(False)
         elif self.rf_timer.isActive():
-            # stopping
+            print("pausing")
+            # pausing
             self.rf_remaining_time = self.rf_timer.remainingTime()
-            self.end_volt_evol()
+            self.end_volt_evol(False)
             btn.setText("Resume")
+            QTimer.singleShot(1000, lambda: btn.setEnabled(True))
         else:
+            print("starting")
             # starting
+            if open:
+                self.rf.change_list_sweep(self.RF_OPEN_TRAP_FILENAME)
+            else:
+                self.rf.change_list_sweep(self.RF_CLOSE_TRAP_FILENAME)
             self.rf.start_list_sweep()
             self.rf_timer.start()
-            self.rf_sim = 0
+            self.rf_sim = 1
             self.lock_rf_control()
             btn.setEnabled(True)
             btn.setText("Pause")
@@ -339,7 +391,9 @@ class MainWindow(QMainWindow):
 
         return is_on
 
-    def lock_rf_control(self):
+    def lock_rf_control(self, msg=None):
+        if msg:
+            self.rf_status_label.setText(msg)
         for control in self.rf_controls:
             control.setEnabled(False)
         self.rf_open_trap_btn.setEnabled(False)
